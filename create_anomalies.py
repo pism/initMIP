@@ -58,23 +58,15 @@ time_var.axis = 'T'
 time_var[:] = range(nt)
 
 smb_background = nc_b.variables['climatic_mass_balance']
-smb_background_untis = smb_background.units
-smb_background_standard_name = smb_background.standard_name
 
 temp_background = nc_b.variables['ice_surface_temp']
-temp_background_untis = temp_background.units
-temp_background_standard_name = temp_background.standard_name
 
 smb_anomaly = nc_a.variables['climatic_mass_balance']
 smb_anomaly_units = smb_anomaly.units
 
 smb_var = nc.createVariable('climatic_mass_balance', 'float64', dimensions=(tdim, ydim, xdim))
-smb_var.units = smb_background_untis
-smb_var.standard_name = smb_background.standard_name
 
 temp_var = nc.createVariable('ice_surface_temp', 'float64', dimensions=(tdim, ydim, xdim))
-temp_var.units = temp_background_untis
-temp_var.standard_name = temp_background.standard_name
 
 for t in range(nt):
     temp_var[t,::] = np.squeeze(temp_background[:])

@@ -20,18 +20,16 @@ create_greenland_epsg3413_grid.py -g ${pism_grid} $pism_grid_file
 nc2cdo.py $pism_grid_file
 
 pismsmbfile=smb_$pism_grid
-EXTRAPOLATE=on cdo -P $N remapbil,$pism_grid_file $smbfile dsmb_$pism_grid_file
-ncks -A -v x,y,mapping $pism_grid_file dsmb_$pism_grid_file
-ncap2 -O -s "climatic_mass_balance=DSMB*910;" dsmb_$pism_grid_file dsmb_$pism_grid_file
+EXTRAPOLATE=on cdo -P $N remapbil,$pism_grid_file $smbfile asmb_$pism_grid_file
+ncks -A -v x,y,mapping $pism_grid_file asmb_$pism_grid_file
+ncap2 -O -s "climatic_mass_balance=DSMB*910;" asmb_$pism_grid_file asmb_$pism_grid_file
 
-ncatted -O -a standard_name,climatic_mass_balance,o,c,"land_ice_surface_specific_mass_balance" dsmb_$pism_grid_file
-ncatted -O -a grid_mapping,climatic_mass_balance,o,c,"mapping" -a units,climatic_mass_balance,o,c,"kg m-2 year-1" dsmb_$pism_grid_file
+ncatted -O -a standard_name,climatic_mass_balance,o,c,"land_ice_surface_specific_mass_balance" asmb_$pism_grid_file
+ncatted -O -a grid_mapping,climatic_mass_balance,o,c,"mapping" -a units,climatic_mass_balance,o,c,"kg m-2 year-1" asmb_$pism_grid_file
 
-mpiexec -n $N fill_missing_petsc.py -v climatic_mass_balance dsmb_$pism_grid_file tmp_dsmb_$pism_grid_file
-ncks -A -v climatic_mass_balance tmp_dsmb_$pism_grid_file dsmb_$pism_grid_file
+mpiexec -n $N fill_missing_petsc.py -v climatic_mass_balance asmb_$pism_grid_file tmp_asmb_$pism_grid_file
+ncks -A -v climatic_mass_balance tmp_asmb_$pism_grid_file asmb_$pism_grid_file
 
-#ncatted -a _FillValue,climatic_mass_balance,d,, -a missing_value,climatic_mass_balance,d,, dsmb_$pism_grid_file
-#ncap2 -O -s "where(climatic_mass_balance<=-10000) climatic_mass_balance=-10000;" dsmb_$pism_grid_file dsmb_$pism_grid_file
 
 # get file; see page http://websrv.cs.umt.edu/isis/index.php/Present_Day_Greenland
 DATAVERSION=1.1
@@ -80,7 +78,7 @@ EXTRAPOLATE=on cdo -P $N remapbil,$pism_grid_file $PISMVERSION smb_Greenland_${p
 mpiexec -n $N fill_missing_petsc.py -v climatic_mass_balance,ice_surface_temp smb_Greenland_${pism_grid}m.nc tmp_smb_Greenland_${pism_grid}m.nc
 ncks -A -v climatic_mass_balance,ice_surface_temp tmp_smb_Greenland_${pism_grid}m.nc smb_Greenland_${pism_grid}m.nc
 
-python create_anomalies.py -a dsmb_$pism_grid_file -b smb_Greenland_${pism_grid}m.nc initMIP_climate_forcing_100a_dsmb.nc
-ncks -A -v mapping ${pism_grid_file} initMIP_climate_forcing_100a_dsmb.nc
-ncatted -a grid_mapping,climatic_mass_balance,o,c,"mapping" -a grid_mapping,ice_surface_temp,o,c,"mapping" initMIP_climate_forcing_100a_dsmb.nc
-ncks -d time,0 initMIP_climate_forcing_100a_dsmb.nc initMIP_climate_forcing_100a_ctrl.nc
+python create_anomalies.py -a asmb_$pism_grid_file -b smb_Greenland_${pism_grid}m.nc initMIP_climate_forcing_100a_asmb.nc
+ncks -A -v x,y,mapping ${pism_grid_file} initMIP_climate_forcing_100a_asmb.nc
+ncatted  -a units,ice_surface_temp,o,c,"Celsius" -a standard_name,ice_surface_temp,o,c,"air_temperature"  -a units,climatic_mass_balance,o,c,"kg m-2 year-1" -a standard_name,climatic_mass_balance,o,c,"land_ice_surface_specific_mass_balance" -a grid_mapping,climatic_mass_balance,o,c,"mapping" -a grid_mapping,ice_surface_temp,o,c,"mapping" initMIP_climate_forcing_100a_asmb.nc
+ncks -O -d time,0 initMIP_climate_forcing_100a_asmb.nc initMIP_climate_forcing_100a_ctrl.nc
