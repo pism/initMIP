@@ -247,7 +247,7 @@ for n, combination in enumerate(combinations):
         
         outfile = '{domain}_g{grid}m_{experiment}_{dura}a_{exp_type}.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=dura, exp_type=exp_type)
             
-        params_dict['PISM_SURFACEBC_FILE'] = 'initMIP_climate_forcing_{dura}a_{exp_type}.nc'.format(dura=dura, exp_type=exp_type)
+        params_dict['PISM_SURFACE_BCFILE'] = 'initMIP_climate_forcing_{dura}a_{exp_type}.nc'.format(dura=dura, exp_type=exp_type)
                 
         params = ' '.join(['='.join([k, str(v)]) for k, v in params_dict.items()])
         cmd = ' '.join([params, './run.sh', str(nn), climate, str(dura), str(grid), 'hybrid', hydro, outfile, infile, '2>&1 | tee job.${PBS_JOBID}'])
