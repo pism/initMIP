@@ -255,23 +255,6 @@ for n, combination in enumerate(combinations):
         f.write(cmd)
         f.write('\n')
 
-        if etype in 'ctrl_v2':
-            mytype = "MO14 2015-04-27"
-        elif etype in 'cresis_v2':
-            mytype = "MO14+CReSIS 2015-04-27"
-        elif etype in 'ctrl_v1.2':
-            mytype = "MO14 2014-11-19"
-        elif etype in ('ctrl', 'ctrl_v1.1'):
-            mytype = "MO14 2014-06-26"
-        elif etype in ('old_bed', 'old_bed_v1.1', 'old_bed_v1.2', 'old_bed_v2'):
-            mytype = "BA01"
-        elif etype in 'searise':
-            mytype = "SR13"
-        else:
-            import sys
-            print('etype {} not recognized, exiting'.format(etype))
-            sys.exit(0)
-
 
 
         
