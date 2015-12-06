@@ -52,10 +52,22 @@ nc.createDimension(xdim, size = (nx))
 nc.createDimension(ydim, size = (ny))
 nc.createDimension(tdim)
 
+bnds_var_name = "time_bnds"
+# create a new dimension for bounds only if it does not yet exist
+bnds_dim = "nb2"
+if bnds_dim not in nc.dimensions.keys():
+    nc.createDimension(bnds_dim, 2)
+
 time_var = nc.createVariable(tdim, 'float64', dimensions=(tdim))
+time_var.bounds = bnds_var_name
 time_var.units = 'years'
 time_var.axis = 'T'
 time_var[:] = range(nt)
+
+# create time bounds variable
+time_bnds_var = nc.createVariable(bnds_var_name, 'd', dimensions=(tdim, bnds_dim))
+time_bnds_var[:, 0] = range(nt)
+time_bnds_var[:, 1] = range(1, nt+1)
 
 smb_background = nc_b.variables['climatic_mass_balance']
 
