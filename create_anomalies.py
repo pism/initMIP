@@ -13,20 +13,27 @@ except:
 
 # Set up the option parser
 parser = ArgumentParser()
-parser.description = "Analyze flux gates. Used for 'Complex Greenland Outlet Galcier Flow Captured'."
-parser.add_argument("-a", "--anomaly_file", dest="anomaly_file",
-                    help='''Anomaly smb file''')
-parser.add_argument("-b", "--background_file", dest="background_file",
+parser.description = "Create initMIP SMB anomalies."
+parser.add_argument("--topo_file", dest="topo_file",
+                    help='''Topo smb file''')
+parser.add_argument("--background_file", dest="background_file",
                     help='''Background smb file''')
 parser.add_argument("OUTFILE", nargs=1)
 options = parser.parse_args()
-anomaly_file = options.anomaly_file
+topo_file = options.topo_file
 background_file = options.background_file
 
 outfile = options.OUTFILE[0]
 
-nc_a = NC(anomaly_file, 'r')
+nc_a = NC(topo_file, 'r')
 nc_b = NC(background_file, 'r')
+
+# RCM p values
+ 
+p1 = 0.0720
+p2 = 2.2484
+p3 = 0.0016
+p4 = 0.1011
 
 try:
     os.remove(outfile)
@@ -69,12 +76,23 @@ time_bnds_var = nc.createVariable(bnds_var_name, 'd', dimensions=(tdim, bnds_dim
 time_bnds_var[:, 0] = range(nt)
 time_bnds_var[:, 1] = range(1, nt+1)
 
-smb_background = nc_b.variables['climatic_mass_balance']
+varname = 'surface_altitude'
+for name in nc_a.variables.keys():
+    v = nc_a.variables[name]
+    if getattr(v, "standard_name", "") == varname:
+        print("variabe {0} found by its standard_name {1}".format(name,
+                                                                  varname))
+        myvar = name
+h = np.squeeze(nc_a.variables[myvar][:])
+lat = np.squeeze(nc_a.variables['lat'][:])
 
+smb_background = nc_b.variables['climatic_mass_balance']
 temp_background = nc_b.variables['ice_surface_temp']
 
-smb_anomaly = nc_a.variables['climatic_mass_balance']
-smb_anomaly_units = smb_anomaly.units
+smb_anomaly = p3*(h-p2) + p4*(lat-71)
+smb_anomaly[smb_anomaly>p1] = p1
+# convert m/year ice equivalent to kg m-2 yr-1
+smb_anomaly *= 910.
 
 smb_var = nc.createVariable('climatic_mass_balance', 'float64', dimensions=(tdim, ydim, xdim))
 
