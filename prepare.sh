@@ -2,7 +2,10 @@
 set -x -e
 N=4
 
-pism_grid=3000
+pism_grid=900
+if [ $# -gt 0 ] ; then
+  pism_grid="$1"
+fi
 
 pism_grid_file=g${pism_grid}m.nc
 create_greenland_ext_epsg3413_grid.py -g ${pism_grid} $pism_grid_file
@@ -18,6 +21,14 @@ DATANAME=Greenland_5km_v$DATAVERSION.nc
 echo "fetching master file ... "
 wget -nc ${DATAURL}${DATANAME}   # -nc is "no clobber"
 echo "  ... done."
+echo
+
+# generate config file
+echo "  Generating config files..."
+for CONFIG in "init_config"; do
+ncgen -o ${CONFIG}.nc ${CONFIG}.cdl
+done
+echo "  Done generating config file."
 echo
 
 
@@ -55,11 +66,11 @@ echo "done."
 
 EXTRAPOLATE=on cdo -P $N remapbil,$pism_grid_file $PISMVERSION smb_Greenland_${pism_grid}m.nc
 mpiexec -n $N fill_missing_petsc.py -v climatic_mass_balance,ice_surface_temp smb_Greenland_${pism_grid}m.nc tmp_smb_Greenland_${pism_grid}m.nc
-ncks -A -v climatic_mass_balance,ice_surface_temp tmp_smb_Greenland_${pism_grid}m.nc smb_Greenland_${pism_grid}m.nc
-
+ncks -A -v climatic_mass_balance,ice_surface_temp tmp_smb_Greenland_${pism_grid}m.nc smb_Greenland_racmo_1960-1990_${pism_grid}m.nc
+ncks -A -v x,y,mapping ${pism_grid_file} smb_Greenland_racmo_1960-1990_${pism_grid}m.nc
 
 outfilepre=initMIP_climate_forcing_${pism_grid}m_100a
-python create_anomalies.py --topo_file pism_Greenland_ext_${pism_grid}m_mcb_jpl_v2.nc --background_file smb_Greenland_${pism_grid}m.nc ${outfilepre}_asmb.nc
+python create_anomalies.py --topo_file pism_Greenland_ext_${pism_grid}m_mcb_jpl_v2.nc --background_file smb_Greenland_racmo_1960-1990_${pism_grid}m.nc ${outfilepre}_asmb.nc
 ncks -A -v x,y,mapping ${pism_grid_file} ${outfilepre}_asmb.nc
 ncatted  -a units,ice_surface_temp,o,c,"Celsius" -a standard_name,ice_surface_temp,o,c,"air_temperature"  -a units,climatic_mass_balance,o,c,"kg m-2 year-1" -a standard_name,climatic_mass_balance,o,c,"land_ice_surface_specific_mass_balance" -a grid_mapping,climatic_mass_balance,o,c,"mapping" -a grid_mapping,ice_surface_temp,o,c,"mapping" ${outfilepre}_asmb.nc
 ncks -O -d time,0 ${outfilepre}_asmb.nc ${outfilepre}_ctrl.nc

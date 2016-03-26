@@ -50,6 +50,38 @@ def generate_domain(domain):
     return pism_exec
 
 
+def default_spatial_ts_vars():
+    '''
+    Returns a list of commonly-used extra vars
+    '''
+    
+    exvars = ['beta',
+              'bmelt',
+              'climatic_mass_balance',
+              'climatic_mass_balance_cumulative',
+              'climatic_mass_balance_original',
+              'dbdt',
+              'diffusivity',
+              'mask',
+              'nuH',
+              'taub_mag',
+              'tauc',
+              'taud_mag',
+              'tempicethk_basal',
+              'temppabase',
+              'tempsurf',
+              'thk',
+              'topg',
+              'usurf',
+              'velbase',
+              'velbase_mag',
+              'velsurf',
+              'velsurf_mag',
+              'wvelbase']
+    
+    return exvars
+
+
 def generate_spatial_ts(outfile, exvars, step, start=None, end=None, split=None):
     '''
     Return dict to generate spatial time series
@@ -57,6 +89,12 @@ def generate_spatial_ts(outfile, exvars, step, start=None, end=None, split=None)
     Returns: OrderedDict
     '''
 
+    # check if list or comma-separated string is given.
+    try:
+        exvars = ','.join(exvars)
+    except:
+        pass
+    
     params_dict = OrderedDict()
     params_dict['extra_file'] = 'ex_' + outfile
     params_dict['extra_vars'] = exvars
@@ -256,6 +294,9 @@ def generate_hydrology(hydro, **kwargs):
     params_dict = OrderedDict()
     if hydro in ('null'):
         params_dict['hydrology'] = 'null'
+    elif hydro in ('diffuse'):
+        params_dict['hydrology'] = 'null'
+        params_dict['hydrology_null_diffuse_till_water'] = ''
     else:
         print('hydrology {} not recognized, exiting'.format(hydro))
         import sys
@@ -324,7 +365,7 @@ def generate_ocean(ocean, **kwargs):
         if 'ocean_delta_SL_file' not in kwargs:
             params_dict['ocean_delta_SL_file'] = 'pism_dSL.nc'
             params_dict['ocean_given_file'] = kwargs['ocean_given_file']
-    elif ocean in ('given'):
+    elif ocean in ('given', 'relax'):
         params_dict['ocean'] = 'given'
     elif ocean in ('const'):
         params_dict['ocean'] = 'constant'
@@ -357,7 +398,8 @@ def make_batch_header(system, cores, walltime, queue):
     systems = {}
     mpido = 'mpiexec -n {cores}'.format(cores=cores)
     systems['debug'] = {'mpido' : mpido,
-                        'Submit': 'echo'}
+                        'submit': 'echo',
+                        'job_id' : 'PBS_JOBID'}
     mpido = 'mpiexec -n {cores}'.format(cores=cores)
     systems['fish'] = {'mpido': 'aprun -n {cores}'.format(cores=cores),
                        'submit' : 'qsub',
