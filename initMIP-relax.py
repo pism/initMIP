@@ -14,7 +14,7 @@ parser = ArgumentParser()
 parser.description = "initMIP relaxation."
 parser.add_argument("FILE", nargs=1)
 parser.add_argument("-n", '--n_procs', dest="n", type=int,
-                    help='''number of cores/processors. default=196.''', default=196)
+                    help='''number of cores/processors. default=192.''', default=192)
 parser.add_argument("-w", '--wall_time', dest="walltime",
                     help='''walltime. default: 96:00:00.''', default="96:00:00")
 parser.add_argument("-q", '--queue', dest="queue", choices=['standard_4', 'standard_16', 'standard', 'gpu', 'gpu_long', 'long', 'normal'],
