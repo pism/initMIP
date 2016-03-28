@@ -19,8 +19,6 @@ parser.add_argument("-w", '--wall_time', dest="walltime",
                     help='''walltime. default: 12:00:00.''', default="12:00:00")
 parser.add_argument("-q", '--queue', dest="queue", choices=['standard_4', 'standard_16', 'standard', 'gpu', 'gpu_long', 'long', 'normal'],
                     help='''queue. default=standard_4.''', default='standard_4')
-parser.add_argument("--climate_file", dest="climate_file",
-                    help="Climate file with temperature and climatic mass balance.", default=None)
 parser.add_argument("--calving", dest="calving",
                     choices=['float_kill', 'ocean_kill', 'eigen_calving', 'thickness_calving'],
                     help="claving", default='eigen_calving')
@@ -82,7 +80,7 @@ bed_deformation = options.bed_deformation
 bed_type = options.bed_type
 calving = options.calving
 climate = 'relax'
-climate_file = options.climate_file
+climate_file = 'initMIP_climate_forcing_{grid}m_100a_ctrl.nc'.format(grid=options.grid)
 forcing_type = options.forcing_type
 grid = options.grid
 hydrology = options.hydrology
