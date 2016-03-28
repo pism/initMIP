@@ -62,6 +62,7 @@ def default_spatial_ts_vars():
               'climatic_mass_balance_original',
               'dbdt',
               'diffusivity',
+              'flux_divergence',
               'mask',
               'nuH',
               'taub_mag',
