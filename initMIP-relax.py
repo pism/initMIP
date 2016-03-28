@@ -104,7 +104,8 @@ else:
 dura = options.dura
 regridfile = filename
 regrid_thickness = options.regrid_thickness
-regridvars = 'age,litho_temp,enthalpy,tillwat,bmelt,Href'
+#regridvars = 'age,litho_temp,enthalpy,tillwat,bmelt,Href'
+regridvars = 'litho_temp,enthalpy,tillwat,bmelt,Href'
 if regrid_thickness:
     regridvars = '{},thk'.format(regridvars)
 
