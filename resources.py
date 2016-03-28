@@ -69,6 +69,7 @@ def default_spatial_ts_vars():
               'tauc',
               'taud_mag',
               'tempicethk_basal',
+              'tempbase',
               'temppabase',
               'tempsurf',
               'thk',

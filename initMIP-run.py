@@ -40,8 +40,9 @@ parser.add_argument("-b", "--bed_type", dest="bed_type",
 parser.add_argument("--bed_deformation", dest="bed_deformation",
                     choices=[None, 'lc', 'iso'],
                     help="Bed deformation model.", default=None)
-parser.add_argument("--duration", dest="dura", type=int,
-                    help="Length of simulation in years (integers)", default=50)
+parser.add_argument("-e", "--experiment", dest="exp",
+                    choices=['ctrl', 'asmb'],
+                    help="output size type", default='ctrl')
 parser.add_argument("--forcing_type", dest="forcing_type",
                     choices=['ctrl', 'e_age'],
                     help="output size type", default='ctrl')
@@ -80,7 +81,8 @@ bed_deformation = options.bed_deformation
 bed_type = options.bed_type
 calving = options.calving
 climate = 'relax'
-climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid)
+climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid, options.exp)
+exp = options.exp
 forcing_type = options.forcing_type
 grid = options.grid
 hydrology = options.hydrology
@@ -101,13 +103,8 @@ if bed_type is None:
 else:
     pism_dataname = '{}_{}.nc'.format(pism_dataname, bed_type)
     
-dura = options.dura
-regridfile = filename
-regrid_thickness = options.regrid_thickness
-#regridvars = 'age,litho_temp,enthalpy,tillwat,bmelt,Href'
-regridvars = 'litho_temp,enthalpy,tillwat,bmelt,Href'
-if regrid_thickness:
-    regridvars = '{},thk'.format(regridvars)
+infile = filename
+
 
 
 # ########################################################
@@ -136,8 +133,8 @@ exstep = 'yearly'
 
 scripts = []
 
-start = 0
-end = dura
+start = -1
+end = 100
 
 for n, combination in enumerate(combinations):
 
@@ -179,15 +176,12 @@ for n, combination in enumerate(combinations):
 
         f.write(batch_header)
 
-        outfile = '{domain}_g{grid}m_relax_{experiment}_{dura}a.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=dura)
+        outfile = '{domain}_g{grid}m_relax_{experiment}_{dura}a_{exp}.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=end, exp=exp)
 
         prefix = generate_prefix_str(pism_exec)
 
         general_params_dict = OrderedDict()
-        general_params_dict['i'] = pism_dataname
-        general_params_dict['bootstrap'] = ''
-        general_params_dict['regrid_file'] = regridfile
-        general_params_dict['regrid_vars'] = regridvars
+        general_params_dict['i'] = infile
         general_params_dict['ys'] = start
         general_params_dict['ye'] = end
         general_params_dict['o'] = outfile
