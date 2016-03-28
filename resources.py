@@ -61,10 +61,18 @@ def default_spatial_ts_vars():
               'climatic_mass_balance_cumulative',
               'climatic_mass_balance_original',
               'dbdt',
+              'dHdt',
               'diffusivity',
+              'discharge_flux',
+              'discharge_flux_cumulative',
               'flux_divergence',
+              'grounded_basal_flux_cumulative',
+              'hfgeoubed',
               'mask',
               'nuH',
+              'sftgrf',
+              'sftflf',
+              'sftgif',
               'taub_mag',
               'tauc',
               'taud_mag',
@@ -75,11 +83,13 @@ def default_spatial_ts_vars():
               'thk',
               'topg',
               'usurf',
+              'velbar',
               'velbase',
               'velbase_mag',
               'velsurf',
               'velsurf_mag',
-              'wvelbase']
+              'wvelbase',
+              'wvelsurf']
     
     return exvars
 
