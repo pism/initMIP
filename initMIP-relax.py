@@ -92,7 +92,6 @@ version = options.version
 
 domain = options.domain
 pism_exec = generate_domain(domain)
-
     
 infile = ''
 if domain.lower() in ('greenland_ext', 'gris_ext'):
@@ -103,11 +102,13 @@ if bed_type is None:
     pism_dataname = '{}.nc'.format(pism_dataname)
 else:
     pism_dataname = '{}_{}.nc'.format(pism_dataname, bed_type)
-
     
 dura = options.dura
 regridfile = filename
 regrid_thickness = options.regrid_thickness
+regridvars = 'age,litho_temp,enthalpy,tillwat,bmelt,Href'
+if regrid_thickness:
+    regridvars = '{},thk'.format(regridvars)
 
 
 # ########################################################
@@ -184,6 +185,8 @@ for n, combination in enumerate(combinations):
         general_params_dict = OrderedDict()
         general_params_dict['i'] = pism_dataname
         general_params_dict['bootstrap'] = ''
+        general_params_dict['regrid_file'] = regridfile
+        general_params_dict['regrid_vars'] = regridvars
         general_params_dict['ys'] = start
         general_params_dict['ye'] = end
         general_params_dict['o'] = outfile
