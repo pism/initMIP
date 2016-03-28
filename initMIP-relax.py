@@ -80,7 +80,7 @@ bed_deformation = options.bed_deformation
 bed_type = options.bed_type
 calving = options.calving
 climate = 'relax'
-climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid)
+climate_file = 'initMIP_climate_forcing_{grid}m_100a_ctrl.nc'.format(grid=options.grid)
 forcing_type = options.forcing_type
 grid = options.grid
 hydrology = options.hydrology
