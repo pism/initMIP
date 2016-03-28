@@ -57,6 +57,7 @@ def default_spatial_ts_vars():
     
     exvars = ['beta',
               'bmelt',
+              'cell_area',
               'climatic_mass_balance',
               'climatic_mass_balance_cumulative',
               'climatic_mass_balance_original',
