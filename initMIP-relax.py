@@ -179,7 +179,7 @@ for n, combination in enumerate(combinations):
 
         f.write(batch_header)
 
-        outfile = '{domain}_g{grid}m_relax_{experiment}_{dura}a.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=dura)
+        outfile = '{domain}_g{grid}m_{experiment}_{dura}a.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=dura)
 
         prefix = generate_prefix_str(pism_exec)
 

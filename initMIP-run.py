@@ -81,7 +81,7 @@ bed_deformation = options.bed_deformation
 bed_type = options.bed_type
 calving = options.calving
 climate = 'relax'
-climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid, options.exp)
+climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid, exp=options.exp)
 exp = options.exp
 forcing_type = options.forcing_type
 grid = options.grid
@@ -161,7 +161,7 @@ for n, combination in enumerate(combinations):
         experiment =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
         
-    script = 'relax_{}_g{}m_{}.sh'.format(domain.lower(), grid, experiment)
+    script = 'exp_{}_g{}m_{}.sh'.format(domain.lower(), grid, experiment)
     scripts.append(script)
     
     for filename in (script):
@@ -176,7 +176,7 @@ for n, combination in enumerate(combinations):
 
         f.write(batch_header)
 
-        outfile = '{domain}_g{grid}m_relax_{experiment}_{dura}a_{exp}.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=end, exp=exp)
+        outfile = '{domain}_g{grid}m_{experiment}_{dura}a_{exp}.nc'.format(domain=domain.lower(),grid=grid, experiment=experiment, dura=end, exp=exp)
 
         prefix = generate_prefix_str(pism_exec)
 
