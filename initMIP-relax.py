@@ -114,14 +114,16 @@ if regrid_thickness:
 # set up initMIP relaxation run
 # ########################################################
 
-sia_e = (3.0)
+# these values are for non-coupled simulations
+# need to be adjusted
+sia_e = (1.25)
 ssa_n = (3.25)
 ssa_e = (1.0)
 
 eigen_calving_k = 1e18
 
 thickness_calving_threshold_vales = [50]
-ppq_values = [0.33]
+ppq_values = [0.33, 0.6]
 tefo_values = [0.020]
 phi_min_values = [5.0]
 phi_max_values = [40.]
