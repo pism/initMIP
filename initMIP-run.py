@@ -161,7 +161,7 @@ for n, combination in enumerate(combinations):
         experiment =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
         
-    script = 'exp_{}_g{}m_{}.sh'.format(domain.lower(), grid, experiment)
+    script = 'exp_{}_g{}m_{}_{}.sh'.format(domain.lower(), grid, experiment, exp)
     scripts.append(script)
     
     for filename in (script):
