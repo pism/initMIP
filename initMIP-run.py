@@ -80,7 +80,7 @@ system = options.system
 bed_deformation = options.bed_deformation
 bed_type = options.bed_type
 calving = options.calving
-climate = 'relax'
+climate = 'given'
 climate_file = 'initMIP_climate_forcing_{grid}m_100a_{exp}.nc'.format(grid=options.grid, exp=options.exp)
 exp = options.exp
 forcing_type = options.forcing_type
@@ -156,7 +156,7 @@ for n, combination in enumerate(combinations):
     
     vversion = 'v' + str(version)
     if bed_type is None:
-        experiment =  '_'.join([climate, vversion, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
+        experiment =  '_'.join([vversion, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
     else:
         experiment =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
