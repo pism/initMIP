@@ -8,3 +8,10 @@ ocean_forcing_latitudinal.nc created by gris-data-sets/ocean-forcing/prepare_oce
 to create the climate forcing, call
 
     ./prepare.sh
+
+Postprocessing
+
+needs cf_units, sh
+
+pip install cf_units
+pip install sh

@@ -1,14 +1,16 @@
 #!/bin/bash
 set -x -e
-bagrid=bamber5km.nc
-create_greenland_bamber_grid.py -g 5000 $bagrid
+targetres=1000
+bagrid=bamber${targetres}.nc
+create_greenland_bamber_grid.py -g $targetres $bagrid
 nc2cdo.py $bagrid
 N=4
 method=con
 rmweights=remapweigths.nc
 sgrid=sgrid.nc
 
-inprefix=ex_greenland_g3600m_const_ctrl_v2_sia_e_1.25_ppq_0.6_tefo_0.02_ssa_n_3.25_ssa_e_1.0_phi_min_5.0_phi_max_40.0_topg_min_-700_topg_max_700_hydro_100a
+inprefix=ex_gris_g3600m_relax_v2_ppq_0.6_tefo_0.02_calving_ocean_kill_forcing_type_ctrl_hydro_diffuse_100a
+# extract thickness to create a source grid
 ncks --64 -O -v thk ${inprefix}_ctrl.nc $sgrid
 nc2cdo.py $sgrid
 cdo -P $N gen$method,$bagrid $sgrid $rmweights
