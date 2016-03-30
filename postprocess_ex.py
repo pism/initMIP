@@ -26,20 +26,26 @@ parser.description = "Script to make ISMIP6-conforming 2D time series."
 parser.add_argument("EXP_FILE", nargs=1)
 parser.add_argument("-n", '--n_procs', dest="n_procs", type=int,
                     help='''number of cores/processors. default=4.''', default=4)
-
+parser.add_argument("-e", "--experiment", dest="experiment",
+                    choices=['ctrl', 'asmb'],
+                    help="Output size type", default='ctrl')
+parser.add_argument("-r", "--remap_method", dest="remap_method",
+                    choices=['con', 'bil'],
+                    help="Remapping method", default='con')
 parser.add_argument("-t", "--target_resolution", dest="target_resolution", type=int,
                     choices=[1000, 5000],
                     help="Horizontal grid resolution", default=1000)
 
-parser.add_argument("-e", "--experiment", dest="experiment",
-                    choices=['ctrl', 'asmb'],
-                    help="Output size type", default='ctrl')
+parser.add_argument("-w", "--override_weights_file",
+                    dest="override_weights_file", action="store_true",
+                    help="Override weights file", default=False)
 
 options = parser.parse_args()
 experiment = options.experiment
-# initfile = options.INIT_FILE[0]
 infile = options.EXP_FILE[0]
 n_procs = options.n_procs
+override_weights_file = options.override_weights_file
+remap_method = options.remap_method
 target_resolution = options.target_resolution
 target_grid_filename = 'searise_grid_{}m.nc'.format(target_resolution)
 IS = 'GIS'
@@ -74,6 +80,7 @@ ismip6_request_vars = (
 
 pism_copy_vars = [
     'beta',
+    'cell_area',
     'climatic_mass_balance',
     'discharge_flux',
 #    'grounded_basal_flux',
@@ -88,6 +95,8 @@ pism_copy_vars = [
     'uvelbase',
     'vvelbase',
     'wvelbase',
+    'ubar',
+    'vbar',
     'sftflf',
     'sftgif',
     'sftgrf',
@@ -95,6 +104,10 @@ pism_copy_vars = [
     'pism_config',
     'run_stats'
 ]
+
+pism_mass_to_vol_vars = [
+    'discharge_flux'
+    ]
 
 pism_diag_vars = [
     'taub_mag',
@@ -137,40 +150,77 @@ class ISMIP6Var(object):
         return "ISMIP6 Variable"
     
     
-ismip6_vars = [
-    ISMIP6Var("acabf"         , "climatic_mass_balance" , "kg m-2 s-1", "land_ice_surface_specific_mass_balance_flux"),
-    ISMIP6Var("dlithkdt"      , "dHdt"                  , "m s-1", "tendency_of_land_ice_thickness"),
-    ISMIP6Var("hfgeoubed"     , "hfgeoubed"             , "W m-2", "upward_geothermal_heat_flux_at_ground_level"),
-    ISMIP6Var("iareaf"        , "iareaf"                , "m2", "floating_ice_shelf_area"),
-    ISMIP6Var("iareag"        , "iareag"                , "m2", "grounded_land_ice_area"),
-    ISMIP6Var("libmassbf"     , ""                      , "kg m-2 s-1", "land_ice_basal_specific_mass_balance_flux"),
-    ISMIP6Var("licalvf"       , "discharge_flux"        , "kg m-2 s-1", "land_ice_specific_mass_flux_due_to_calving"),
-    ISMIP6Var("lim"           , "imass"                 , "kg", "land_ice_mass"),
-    ISMIP6Var("limnsw"        , "limnsw"                , "kg", "land_ice_mass_not_displacing_sea_water"),
-    ISMIP6Var("litempbot"     , "tempbase"              , "K", "land_ice_basal_temperature"),
-    ISMIP6Var("litempsnic"    , "tempsurf"              , "K", "temperature_at_ground_level_in_snow_or_firn"),
-    ISMIP6Var("lithk"         , "thk"                   , "m", "land_ice_thickness"),
-    ISMIP6Var("orog"          , "usurf"                 , "m", "surface_altitude"),
-    ISMIP6Var("sfrgrf"        , "sfrgrf"                , "1", "grounded_ice_sheet_area_fraction"),
-    ISMIP6Var("sftflf"        , "sftflf"                , "1", "floating_ice_sheet_area_fraction"),
-    ISMIP6Var("sftgif"        , "sftgif"                , "1", "land_ice_area_fraction"),
-    ISMIP6Var("strbasemag"    , "taub"                  , "Pa", "magnitude_of_land_ice_basal_drag"),
-    ISMIP6Var("tendacabf"     , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_surface_mass_balance"),
-    ISMIP6Var("tendlibmassbf" , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_basal_mass_balance"),
-    ISMIP6Var("tendlicalvf"   , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_calving"),
-    ISMIP6Var("topg"          , "topg"                  , "m", "bedrock_altitude"),
-    ISMIP6Var("uvelbase"      , "uvelbase"              , "m s-1", "land_ice_basal_x_velocity"),
-    ISMIP6Var("uvelmean"      , "uvelbar"               , "m s-1", "land_ice_vertical_mean_x_velocity"),
-    ISMIP6Var("uvelsurf"      , "uvelsurf"              , "m s-1", "land_ice_surface_x_velocity"),
-    ISMIP6Var("vvelbase"      , "vvelbase"              , "m s-1", "land_ice_basal_y_velocity"),
-    ISMIP6Var("vvelmean"      , "vvelbar"               , "m s-1", "land_ice_vertical_mean_y_velocity"),
-    ISMIP6Var("vvelsurf"      , "vvelsurf"              , "m s-1", "land_ice_surface_y_velocity"),
-    ISMIP6Var("wvelbase"      , "wvelbase"              , "m s-1", "land_ice_basal_upward_velocity"),
-    ISMIP6Var("wvelsurf"      , "wvelsurf"              , "m s-1", "land_ice_surface_upward_velocity")
-]
+ismip6_vars = {
+    "acabf": ISMIP6Var("acabf"         , "climatic_mass_balance" , "kg m-2 s-1", "land_ice_surface_specific_mass_balance_flux"),
+    "dlithkdt": ISMIP6Var("dlithkdt"      , "dHdt"                  , "m s-1", "tendency_of_land_ice_thickness"),
+    "hfgeoubed": ISMIP6Var("hfgeoubed"     , "hfgeoubed"             , "W m-2", "upward_geothermal_heat_flux_at_ground_level"),
+    "iareaf": ISMIP6Var("iareaf"        , "iareaf"                , "m2", "floating_ice_shelf_area"),
+    "iareag": ISMIP6Var("iareag"        , "iareag"                , "m2", "grounded_land_ice_area"),
+    "libmassbf": ISMIP6Var("libmassbf"     , ""                      , "kg m-2 s-1", "land_ice_basal_specific_mass_balance_flux"),
+    "licalvf": ISMIP6Var("licalvf"       , "discharge_flux"        , "kg m-2 s-1", "land_ice_specific_mass_flux_due_to_calving"),
+    "lim": ISMIP6Var("lim"           , "imass"                 , "kg", "land_ice_mass"),
+    "limnsw": ISMIP6Var("limnsw"        , "limnsw"                , "kg", "land_ice_mass_not_displacing_sea_water"),
+    "litempbot": ISMIP6Var("litempbot"     , "tempbase"              , "K", "land_ice_basal_temperature"),
+    "litempsnic": ISMIP6Var("litempsnic"    , "tempsurf"              , "K", "temperature_at_ground_level_in_snow_or_firn"),
+    "lithk": ISMIP6Var("lithk"         , "thk"                   , "m", "land_ice_thickness"),
+    "orog": ISMIP6Var("orog"          , "usurf"                 , "m", "surface_altitude"),
+    "sfrgrf": ISMIP6Var("sfrgrf"        , "sfrgrf"                , "1", "grounded_ice_sheet_area_fraction"),
+    "sftflf": ISMIP6Var("sftflf"        , "sftflf"                , "1", "floating_ice_sheet_area_fraction"),
+    "sftgif": ISMIP6Var("sftgif"        , "sftgif"                , "1", "land_ice_area_fraction"),
+    "strbasemag": ISMIP6Var("strbasemag"    , "taub"                  , "Pa", "magnitude_of_land_ice_basal_drag"),
+    "tendacabf": ISMIP6Var("tendacabf"     , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_surface_mass_balance"),
+    "tendlibmassbf": ISMIP6Var("tendlibmassbf" , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_basal_mass_balance"),
+    "tendlicalvf": ISMIP6Var("tendlicalvf"   , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_calving"),
+    "topg": ISMIP6Var("topg"          , "topg"                  , "m", "bedrock_altitude"),
+    "uvelbase": ISMIP6Var("uvelbase"      , "uvelbase"              , "m s-1", "land_ice_basal_x_velocity"),
+    "uvelmean": ISMIP6Var("uvelmean"      , "uvelbar"               , "m s-1", "land_ice_vertical_mean_x_velocity"),
+    "uvelsurf": ISMIP6Var("uvelsurf"      , "uvelsurf"              , "m s-1", "land_ice_surface_x_velocity"),
+    "vvelbase": ISMIP6Var("vvelbase"      , "vvelbase"              , "m s-1", "land_ice_basal_y_velocity"),
+    "vvelmean": ISMIP6Var("vvelmean"      , "vvelbar"               , "m s-1", "land_ice_vertical_mean_y_velocity"),
+    "vvelsurf": ISMIP6Var("vvelsurf"      , "vvelsurf"              , "m s-1", "land_ice_surface_y_velocity"),
+    "wvelbase": ISMIP6Var("wvelbase"      , "wvelbase"              , "m s-1", "land_ice_basal_upward_velocity"),
+    "wvelsurf": ISMIP6Var("wvelsurf"      , "wvelsurf"              , "m s-1", "land_ice_surface_upward_velocity")
+}
 
-ismip6_to_pism_dict = dict((v.ismip6_name, v.pism_name) for v in ismip6_vars)
-pism_to_ismip6_dict = dict((v.pism_name, v.ismip6_name) for v in ismip6_vars)
+ismip6_to_pism_dict = dict((k, v.pism_name) for k, v in ismip6_vars.iteritems())
+pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars.iteritems())
+
+
+def make_ismip6_conforming(filename):
+    '''
+    Make file ISMIP6 conforming
+    '''
+    # Open file
+    nc = CDF(filename, 'a')
+
+    cell_area_var = nc.variables['cell_area']
+    cell_area_units = cell_area_var.units
+    cell_area = cell_area_var[:]
+
+    for pism_var in nc.variables:
+        nc_var = nc.variables[pism_var]
+        if pism_var in pism_to_ismip6_dict.keys():
+            ismip6_var = pism_to_ismip6_dict[pism_var]
+            print('Processing {} / {}'.format(pism_var, ismip6_var))
+            if not pism_var == ismip6_var:
+                print('  Renaming {pism_var} to {ismip6_var}'.format(pism_var=pism_var, ismip6_var=ismip6_var))
+                nc.renameVariable(pism_var, ismip6_var)
+                nc.sync()
+            if pism_var in pism_mass_to_vol_vars:
+                print('  Converting {pism_var} from mass to volume'.format(pism_var=pism_var))
+                nc_var[:] /= cell_area
+                i_units = nc_var.units
+                o_units = cf_units.Unit(i_units) / cf_units.Unit(cell_area_units)
+                nc_var.units = o_units.format()
+            if not nc_var.units == ismip6_vars[ismip6_var].units:
+                o_units = ismip6_vars[ismip6_var].units            
+                i_units = nc_var.units
+                print('  Converting {pism_var} from {i_units} to {o_units}'.format(pism_var=pism_var, i_units=i_units, o_units=o_units))    
+                i_f = cf_units.Unit(i_units)
+                o_f = cf_units.Unit(o_units)
+                nc_var[:] = i_f.convert(nc_var[:], o_f)
+                nc_var.units = o_units
+    nc.close()
 
 
 def create_searise_grid(filename, grid_spacing, **kwargs):
@@ -343,7 +393,7 @@ if __name__ == "__main__":
         os.mkdir(project_dir)
     
     
-    tmp_filename = 'tmp_{}.nc'.format(EXP)
+    tmp_filename = 'tmp_{}.nc'.format(EXP.upper())
     tmp_file = os.path.join(project_dir, tmp_filename)
     try:
         os.remove(tmp_file)
@@ -353,109 +403,92 @@ if __name__ == "__main__":
            '-v', '{}'.format(','.join(pism_copy_vars)),
            infile, tmp_file]
     sub.call(cmd)
-
-    # source_grid_filename = 'source_grid.nc'
-    # source_grid_file = os.path.join(project_dir, source_grid_filename)
-    # ncks_cmd = ['ncks', '-O', '-v', 'thk,mapping', infile, source_grid_file]
-    # sub.call(ncks_cmd)
-    # nc2cdo_cmd = ['nc2cdo.py', source_grid_file]
-    # sub.call(nc2cdo_cmd)
     
-    # # If exist, remove target grid description file
-    # target_grid_file = os.path.join(project_dir, target_grid_filename)
-    # try:
-    #     os.remove(target_grid_file)
-    # except OSError:
-    #     pass
+    # Make the file ISMIP6 conforming
+    make_ismip6_conforming(tmp_file)
+    # Should be temporary until new runs
+    nc2cdo_cmd = ['nc2cdo.py', tmp_file]
+    sub.call(nc2cdo_cmd)
+                
+    # Create source grid definition file
+    source_grid_filename = 'source_grid.nc'
+    source_grid_file = os.path.join(project_dir, source_grid_filename)
+    ncks_cmd = ['ncks', '-O', '-v', 'thk,mapping', infile, source_grid_file]
+    sub.call(ncks_cmd)
+    nc2cdo_cmd = ['nc2cdo.py', source_grid_file]
+    sub.call(nc2cdo_cmd)
 
-    # # Create target grid description file
-    # create_searise_grid(target_grid_file, target_resolution)
-    # tmp_filename = 'tmp_{}.nc'.format(EXP)
-    # tmp_file = os.path.join(project_dir, tmp_filename)
-    # try:
-    #     os.remove(tmp_file)
-    # except OSError:
-    #     pass
+    # If exist, remove target grid description file
+    target_grid_file = os.path.join(project_dir, target_grid_filename)
+    try:
+        os.remove(target_grid_file)
+    except OSError:
+        pass
 
-    # ncks_cmd = ['ncks', '-O', '-v',
-    #             ','.join(map(str, pism_copy_vars)),
-    #             infile,
-    #             tmp_file]
-    # sub.call(ncks_cmd)
-
-    # # Open file
-    # nc = CDF(tmp_file, 'a')
-
-
+    # Create target grid description file
+    create_searise_grid(target_grid_file, target_resolution)
     
-    # cdo_weights_filename = 'searise_grid_{}m_weights.nc'.format(target_resolution)
-    # cdo_weights_file = os.path.join(project_dir, cdo_weights_filename)
-    # if not os.path.isfile(cdo_weights_filename):
-    #     cdo_cmd = ['cdo', '-P', '{}'.format(n_procs),
-    #         'gencon,{}'.format(target_grid_file),
-    #         source_grid_file,
-    #         cdo_weights_file]
-    #     sub.call(cdo_cmd)
-    # cp_cmd = ['cp', infile, tmp_file]
-    # sub.call(cp_cmd)
-    # nc = CDF(tmp_file, 'a')
-    # # for m_var in ['velsurf_mag']:
-    # #     print m_var
-    # #     nc.renameVariable(m_var, 'velsurfmag')
-    # #     nc.sync()
-    # #     nc_var = nc.variables['velsurfmag']
-    # #     i_unit = nc_var.units
-    # #     i_f = cf_units.Unit(i_unit)
-    # #     o_unit = 'm s-1'
-    # #     o_f = cf_units.Unit(o_unit)
-    # #     nc_var[:] = i_f.convert(nc_var[:], o_f)
-    # #     #nc_var[:] = unit_converter(nc_var[:], i_unit, o_unit) 
-    # #     nc_var.units = o_unit
-    # # nc.close()
-    # outfilename = '{}.nc'.format(project)
-    # outfile = os.path.join(project_dir, outfilename)
-    # try:
-    #     os.remove(outfile)
-    # except OSError:
-    #     pass
+    # Generate weights if weights file does not exist yet
+    cdo_weights_filename = 'searise_grid_{}m_weights.nc'.format(target_resolution)
+    cdo_weights_file = os.path.join(project_dir, cdo_weights_filename)
+    if (not os.path.isfile(cdo_weights_filename)) or (override_weigths_file is True):
+        print('Generating CDO weights file {}'.format(cdo_weights_file))
+        cdo_cmd = ['cdo', '-P', '{}'.format(n_procs),
+                   'gen{method},{grid}'.format(method=remap_method, grid=target_grid_file),
+            source_grid_file,
+            cdo_weights_file]
+        sub.call(cdo_cmd)
+
+    # Remap to SeaRISE grid
     
+    out_filename = '{project}_{exp}.nc'.format(project=project, exp=EXP.upper())
+    out_file = os.path.join(project_dir, out_filename)
+    try:
+        os.remove(out_file)
+    except OSError:
+        pass
+    cdo_cmd = ['cdo', '-P', '{}'.format(n_procs),
+               'remap,{},{}'.format(target_grid_file, cdo_weights_file),
+               tmp_file,
+               out_file]
+    sub.call(cdo_cmd)
+
+    cdo_cmd = ['cdo', 'splitname,swap',
+               out_file, '_{}'.format(project)]
+    sub.call(cdo_cmd)
+
+    # Open file
+    nc = CDF(out_file, 'a')
+
+    time = nc.variables['time']
+    time_bnds_var = time.bounds
+    time_bnds = nc.variables[time_bnds_var]
+    nt = len(time[:])
+    new_timeline = np.linspace(0, 100, nt, endpoint=True)
+    time[:] = new_timeline
+    time_bnds[:,0] = new_timeline - 5
+    time_bnds[:,1] = new_timeline
+    time.units = 'years'
+    time_bnds.units = 'years'
+
+    nc.close()
     
-# targetres=1000
-# bagrid=bamber${targetres}.nc
-# create_greenland_bamber_grid.py -g $targetres $bagrid
-# nc2cdo.py $bagrid
-# N=4
-# method=con
-# rmweights=remapweigths.nc
-# sgrid=sgrid.nc
+    vars_dir = os.path.join(project_dir, EXP)
+    if not os.path.exists(vars_dir):
+        os.mkdir(vars_dir)
 
-# inprefix=ex_gris_g3600m_relax_v2_ppq_0.6_tefo_0.02_calving_ocean_kill_forcing_type_ctrl_hydro_diffuse_100a
-# # extract thickness to create a source grid
-# ncks --64 -O -v thk ${inprefix}_ctrl.nc $sgrid
-# nc2cdo.py $sgrid
-# cdo -P $N gen$method,$bagrid $sgrid $rmweights
-
-# for exp in "ctrl"; do
-#     infile=${inprefix}_${exp}.nc
-#     tmpfile1=tmp_$infile
-#     ncks --64 -O -v mapping,thk,topg,usurf,climatic_mass_balance,bmelt,uvelsurf,vvelsurf,discharge_flux_cumulative,tempsurf,taub_mag,mask $infile $tmpfile1
-#     ncap2 -O -s '*sz_idt=time.size(); *discharge_flux[$time,$y,$x]= 0.f; *dlithkdt[$time,$y,$x]= 0.f; for(*idt=1 ; idt<sz_idt ; idt++) {discharge_flux(idt,:,:)=-(discharge_flux_cumulative(idt,:,:)-discharge_flux_cumulative(idt-1,:,:))/(time(idt)-time(idt-1))*1e12; dlithkdt(idt,:,:)=(thk(idt,:,:)-thk(idt-1,:,:))/(time(idt)-time(idt-1));} discharge_flux.ram_write(); dlithkdt.ram_write(); uvelsurf=uvelsurf/31556925.9747; vvelsurf=vvelsurf/31556925.9747; climatic_mass_balance=climatic_mass_balance/31556925.9747; sftgif[$time,$y,$x]=0b; where(mask==2 || mask==3) sftgif=1; sftflf[$time,$y,$x]=0b; where(mask==3) sftflf=1; sfrgrf[$time,$y,$x]=0b; where(mask==2) sfrgrf=1;' $tmpfile1 $tmpfile1
-#     ncatted -a units,discharge_flux,o,c,"kg s-1" -a units,dlithkdt,o,c,"m s-1" -a units,uvelsurf,o,c,"m s-1" -a units,vvelsurf,o,c,"m s-1" -a units,climatic_mass_balance,o,c,"kg m-2 s-1" $tmpfile1
-
-#     ncks -O -x -v mask,discharge_flux_cumulative $tmpfile1 $tmpfile1
-#     nc2cdo.py $tmpfile1
-#     tmpfile2=tmp2_$infile
-#     cdo timselavg,5 $tmpfile1 $tmpfile2
-#     ncrename -v thk,lithk -v usurf,orog -v climatic_mass_balance,acabf -v bmelt,libmassbf  -v tempsurf,litempsnic -v taub_mag,strbasemag -v discharge_flux,licalvf $tmpfile2
-#     ncatted -a standard_name,acabf,o,c,"land_ice_surface_specific_mass_balance_flux"  -a standard_name,dlithkdt,o,c,"tendency_of_land_ice_thickness" -a standard_name,libmassbf,o,c,"land_ice_basal_specific_mass_balance_flux" -a standard_name,licalvf,o,c,"land_ice_specific_mass_flux_due_to_calving" -a standard_name,sftgif,o,c,"land_ice_area_fraction" -a standard_name,sfrgrf,o,c,"grounded_ice_sheet_area_fraction" -a standard_name,sftflf,o,c,"floating_ice_sheet_area_fraction" -a standard_name,strbasemag,o,c,"magnitude_of_land_ice_basal_drag" -a standard_name,litempsnic,o,c,"temperature_at_ground_level_in_snow_or_firn" $tmpfile2
-#     expu=$(echo $exp | tr '[:lower:]' '[:upper:]')
-#     obase=GIS_UAF_PISM_${expu}
-#     outfile=${obase}.nc
-#     cdo -P $N remap,$bagrid,$rmweights $tmpfile2 $outfile
-#     ncks -A -v x,y,mapping $bagrid $outfile
-#     cdo splitname,swap $outfile _$obase
+    for m_var in ismip6_vars.keys():
+        cmd = ['mv',
+               '{}_{}.nc'.format(m_var, project),
+               '{}/'.format(vars_dir)]
+        sub.call(cmd)
+        ncks_cmd = ['ncks', '-A', '-v', 'x,y,mapping',
+                    target_grid_file,
+        '{}/{}_{}.nc'.format(vars_dir, m_var, project)]
+        sub.call(ncks_cmd)
 #     for file in *_$obase.nc; do
 #         ncks -A -v x,y,mapping $bagrid $file
 #         ncks -A -v run_stats,pism_config $tmpfile1 $file
 #     done
-# done
+
+    
