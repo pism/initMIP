@@ -22,8 +22,8 @@ from netCDF4 import Dataset as CDF
 # Set up the option parser
 parser = ArgumentParser()
 parser.description = "Script to make ISMIP6-conforming 2D time series."
-parser.add_argument("INIT_FILE", nargs=1)
-#parser.add_argument("EXP_FILE", nargs=1)
+#parser.add_argument("INIT_FILE", nargs=1)
+parser.add_argument("EXP_FILE", nargs=1)
 parser.add_argument("-n", '--n_procs', dest="n_procs", type=int,
                     help='''number of cores/processors. default=4.''', default=4)
 
@@ -324,9 +324,9 @@ def create_searise_grid(filename, grid_spacing, **kwargs):
     mapping.false_northing = 0.
     mapping.grid_mapping_name = "polar_stereographic"
     mapping.latitude_of_projection_origin = 90.
-    mapping.standard_parallel = 70.
-    mapping.straight_vertical_longitude_from_pole = -45.
-
+    mapping.standard_parallel = 71.
+    mapping.straight_vertical_longitude_from_pole = -39.
+    
     from time import asctime
     historystr = 'Created ' + asctime() + '\n'
     nc.history = historystr
@@ -337,38 +337,21 @@ def create_searise_grid(filename, grid_spacing, **kwargs):
     
 if __name__ == "__main__":
 
-    
 
     project_dir = project
     if not os.path.exists(project_dir):
         os.mkdir(project_dir)
-
-
-    # Fluxes: calculate 5-yr means from yearly means
-    flux_avg_filename = 'flux_avg_{}.nc'.format(EXP)
-    flux_avg_file = os.path.join(project_dir, flux_avg_filename)
-    try:
-        os.remove(flux_avg_file)
-    except OSError:
-        pass
-    cmd = ['cdo', 'timselmean,{},1'.format(ismip6_reporting_inverval),
-               '-selvar,{}'.format(','.join(pism_flux_vars)),
-               infile, flux_avg_file]
-    sub.call(cmd)
-
-    # Diagnostics: every 5th time step
     
-    #
-    diag_filename = 'diag_{}.nc'.format(EXP)
-    diag_file = os.path.join(project_dir, diag_filename)
+    
+    tmp_filename = 'tmp_{}.nc'.format(EXP)
+    tmp_file = os.path.join(project_dir, tmp_filename)
     try:
-        os.remove(diag_file)
+        os.remove(tmp_file)
     except OSError:
         pass
     cmd = ['ncks', '-O',
-           '-d', 'time,{},,{}'.format(offset, ismip6_reporting_inverval),
-           '-v', '{}'.format(','.join(pism_diag_vars)),
-           infile, diag_file]
+           '-v', '{}'.format(','.join(pism_copy_vars)),
+           infile, tmp_file]
     sub.call(cmd)
 
     # source_grid_filename = 'source_grid.nc'

@@ -53,7 +53,10 @@ tdim = 'time'
 
 nx = len(nc_a.dimensions[xdim_a])
 ny = len(nc_a.dimensions[ydim_b])
-nt = 100
+
+start = -5
+end = 100
+nt = end - start
 
 nc.createDimension(xdim, size = (nx))
 nc.createDimension(ydim, size = (ny))
@@ -69,12 +72,12 @@ time_var = nc.createVariable(tdim, 'float64', dimensions=(tdim))
 time_var.bounds = bnds_var_name
 time_var.units = 'years'
 time_var.axis = 'T'
-time_var[:] = range(nt)
+time_var[:] = range(start, end)
 
 # create time bounds variable
 time_bnds_var = nc.createVariable(bnds_var_name, 'd', dimensions=(tdim, bnds_dim))
-time_bnds_var[:, 0] = range(nt)
-time_bnds_var[:, 1] = range(1, nt+1)
+time_bnds_var[:, 0] = range(start, end)
+time_bnds_var[:, 1] = range(start+1, end+1)
 
 varname = 'surface_altitude'
 for name in nc_a.variables.keys():
@@ -98,13 +101,16 @@ smb_var = nc.createVariable('climatic_mass_balance', 'float64', dimensions=(tdim
 
 temp_var = nc.createVariable('ice_surface_temp', 'float64', dimensions=(tdim, ydim, xdim))
 
-for t in range(nt):
-    temp_var[t,::] = np.squeeze(temp_background[:])
-    if t <= 40:
-        smb_var[t,::] = np.squeeze(smb_background[:]) + np.squeeze(smb_anomaly[:]) * np.floor(t) / 40
+for k in range(nt):
+    t = k + start
+    temp_var[k,::] = np.squeeze(temp_background[:])
+    if t < 0:
+        smb_var[k,::] = np.squeeze(smb_background[:])
+    elif (t >= 0) and (t < 40):
+        smb_var[k,::] = np.squeeze(smb_background[:]) + np.squeeze(smb_anomaly[:]) * np.floor(t) / 40
     else:
-        smb_var[t,::] = np.squeeze(smb_background[:]) + np.squeeze(smb_anomaly[:])
-
+        smb_var[k,::] = np.squeeze(smb_background[:]) + np.squeeze(smb_anomaly[:])
+        
 
 nc.close()
 nc_a.close()
