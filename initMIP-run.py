@@ -129,11 +129,11 @@ topg_max_values = [700]
 combinations = list(itertools.product(thickness_calving_threshold_vales, ppq_values, tefo_values, phi_min_values, phi_max_values, topg_min_values, topg_max_values))
 
 tsstep = 'yearly'
-exstep = 'yearly'
+exstep = 5
 
 scripts = []
 
-start = -1
+start = -5
 end = 100
 
 for n, combination in enumerate(combinations):

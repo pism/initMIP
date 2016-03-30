@@ -22,7 +22,8 @@ from netCDF4 import Dataset as CDF
 # Set up the option parser
 parser = ArgumentParser()
 parser.description = "Script to make ISMIP6-conforming 2D time series."
-parser.add_argument("FILE", nargs=1)
+parser.add_argument("INIT_FILE", nargs=1)
+#parser.add_argument("EXP_FILE", nargs=1)
 parser.add_argument("-n", '--n_procs', dest="n_procs", type=int,
                     help='''number of cores/processors. default=4.''', default=4)
 
@@ -36,7 +37,8 @@ parser.add_argument("-e", "--experiment", dest="experiment",
 
 options = parser.parse_args()
 experiment = options.experiment
-infile = options.FILE[0]
+# initfile = options.INIT_FILE[0]
+infile = options.EXP_FILE[0]
 n_procs = options.n_procs
 target_resolution = options.target_resolution
 target_grid_filename = 'searise_grid_{}m.nc'.format(target_resolution)
@@ -46,6 +48,8 @@ MODEL = 'PISM'
 EXP = experiment
 project = '{IS}_{GROUP}_{MODEL}'.format(IS=IS, GROUP=GROUP, MODEL=MODEL)
 
+offset = 6
+ismip6_reporting_inverval = 5
 ismip6_request_vars = (
     'lithk',
     'orog',
@@ -72,7 +76,27 @@ pism_copy_vars = [
     'beta',
     'climatic_mass_balance',
     'discharge_flux',
-    'grounded_basal_flux',
+#    'grounded_basal_flux',
+    'taub_mag',
+    'thk',
+    'usurf',
+    'topg',
+    'hfgeoubed',
+    'uvelsurf',
+    'vvelsurf',
+    'wvelsurf',
+    'uvelbase',
+    'vvelbase',
+    'wvelbase',
+    'sftflf',
+    'sftgif',
+    'sftgrf',
+    'mapping',
+    'pism_config',
+    'run_stats'
+]
+
+pism_diag_vars = [
     'taub_mag',
     'thk',
     'usurf',
@@ -95,7 +119,7 @@ pism_copy_vars = [
 pism_flux_vars = [
     'climatic_mass_balance',
     'discharge_flux',
-    'grounded_basal_flux'
+#    'grounded_basal_flux'
     ]
 
 
@@ -319,25 +343,34 @@ if __name__ == "__main__":
     if not os.path.exists(project_dir):
         os.mkdir(project_dir)
 
-    tmp_0_filename = 'tmp_0_{}.nc'.format(EXP)
-    tmp_0_file = os.path.join(project_dir, tmp_0_filename)
-    try:
-        os.remove(tmp_0_file)
-    except OSError:
-        pass
-    tmp_filename = 'tmp_{}.nc'.format(EXP)
-    tmp_file = os.path.join(project_dir, tmp_filename)
-    try:
-        os.remove(tmp_file)
-    except OSError:
-        pass
 
-    ncks_cmd = ['ncks', '-O', '-d time,0',
-                '-v', ','.join(map(str, pism_copy_vars)),
-                infile,
-                tmp_0_file]
-    sub.call(ncks_cmd)
-        
+    # Fluxes: calculate 5-yr means from yearly means
+    flux_avg_filename = 'flux_avg_{}.nc'.format(EXP)
+    flux_avg_file = os.path.join(project_dir, flux_avg_filename)
+    try:
+        os.remove(flux_avg_file)
+    except OSError:
+        pass
+    cmd = ['cdo', 'timselmean,{},1'.format(ismip6_reporting_inverval),
+               '-selvar,{}'.format(','.join(pism_flux_vars)),
+               infile, flux_avg_file]
+    sub.call(cmd)
+
+    # Diagnostics: every 5th time step
+    
+    #
+    diag_filename = 'diag_{}.nc'.format(EXP)
+    diag_file = os.path.join(project_dir, diag_filename)
+    try:
+        os.remove(diag_file)
+    except OSError:
+        pass
+    cmd = ['ncks', '-O',
+           '-d', 'time,{},,{}'.format(offset, ismip6_reporting_inverval),
+           '-v', '{}'.format(','.join(pism_diag_vars)),
+           infile, diag_file]
+    sub.call(cmd)
+
     # source_grid_filename = 'source_grid.nc'
     # source_grid_file = os.path.join(project_dir, source_grid_filename)
     # ncks_cmd = ['ncks', '-O', '-v', 'thk,mapping', infile, source_grid_file]
