@@ -213,11 +213,29 @@ ismip6_vars = {
 ismip6_to_pism_dict = dict((k, v.pism_name) for k, v in ismip6_vars.iteritems())
 pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars.iteritems())
 
+def adjust_time_axis(filename):
+    '''
+    Adjusts the time axis
+    '''
+    
+    nc = CDF(filename, 'a')
+    time = nc.variables['time']
+    time_bnds_var = time.bounds
+    time_bnds = nc.variables[time_bnds_var]
+    nt = len(time[:])
+    new_timeline = np.linspace(0, 100, nt, endpoint=True)
+    time[:] = new_timeline
+    time_bnds[:,0] = new_timeline - 5
+    time_bnds[:,1] = new_timeline
+    time.units = 'years'
+    time_bnds.units = 'years'
+    nc.close()
 
 def make_ismip6_conforming(filename):
     '''
     Make file ISMIP6 conforming
     '''
+    
     # Open file
     nc = CDF(filename, 'a')
 
@@ -488,25 +506,8 @@ if __name__ == "__main__":
                out_file]
     sub.call(cdo_cmd)
 
-    # cdo_cmd = ['cdo', 'splitname,swap',
-    #            out_file, '_{}'.format(project)]
-    # sub.call(cdo_cmd)
-
-    # Open file
-    nc = CDF(out_file, 'a')
-
-    time = nc.variables['time']
-    time_bnds_var = time.bounds
-    time_bnds = nc.variables[time_bnds_var]
-    nt = len(time[:])
-    new_timeline = np.linspace(0, 100, nt, endpoint=True)
-    time[:] = new_timeline
-    time_bnds[:,0] = new_timeline - 5
-    time_bnds[:,1] = new_timeline
-    time.units = 'years'
-    time_bnds.units = 'years'
-
-    nc.close()
+    # Adjust the time axis
+    adjust_time_axis(out_file)
 
     vars_dir = os.path.join(project_dir, EXP)
     if not os.path.exists(vars_dir):
