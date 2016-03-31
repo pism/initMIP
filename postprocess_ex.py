@@ -135,8 +135,11 @@ pism_flux_vars = [
     'surface_mass_balance_averge'
     ]
 
+pism_stats_vars = ('pism_config', 'run_stats')
+
 
 class ISMIP6Var(object):
+    ismip6_name = None
     pism_name = None
     units = None
     standard_name = None
@@ -144,7 +147,7 @@ class ISMIP6Var(object):
         self.ismip6_name = ismip6_name
         self.pism_name = pism_name
         self.units = units
-        self.standard_name
+        self.standard_name = standard_name
 
     def __repr__(self):
         return "ISMIP6 Variable"
@@ -245,6 +248,7 @@ def make_ismip6_conforming(filename):
                 o_f = cf_units.Unit(o_units)
                 nc_var[:] = i_f.convert(nc_var[:], o_f)
                 nc_var.units = o_units
+                nc_var.standard_name = ismip6_vars[ismip6_var].standard_name
     nc.close()
 
 
@@ -462,7 +466,7 @@ if __name__ == "__main__":
     # Generate weights if weights file does not exist yet
     cdo_weights_filename = 'searise_grid_{}m_weights.nc'.format(target_resolution)
     cdo_weights_file = os.path.join(project_dir, cdo_weights_filename)
-    if (not os.path.isfile(cdo_weights_filename)) or (override_weigths_file is True):
+    if (not os.path.isfile(cdo_weights_filename)) or (override_weights_file is True):
         print('Generating CDO weights file {}'.format(cdo_weights_file))
         cdo_cmd = ['cdo', '-P', '{}'.format(n_procs),
                    'gen{method},{grid}'.format(method=remap_method, grid=target_grid_file),
@@ -509,28 +513,34 @@ if __name__ == "__main__":
         os.mkdir(vars_dir)
 
     for m_var in ismip6_request_vars:
-        try:
-            ncks_cmd = ['ncks', '-O',
-                        '-v', m_var,
-                        out_file,
-                        '{}/{}_{}.nc'.format(vars_dir, m_var, project)
-            ]
-        except:
-            print('  could not extract {}'.format(m_var))
-            
-
-    for m_var in ismip6_vars.keys():
-        cmd = ['mv',
-               '{}_{}.nc'.format(m_var, project),
-               '{}/'.format(vars_dir)]
-        sub.call(cmd)
+        final_file = '{}/{}_{}.nc'.format(vars_dir, m_var, project)
+        print('Finalizing file {}'.format(final_file))
+        # Generate file
+        ncks_cmd = ['ncks', '-O',
+                    '-v', m_var,
+                    out_file,
+                    final_file]
+        sub.call(ncks_cmd)
+        # Add stats vars
+        ncks_cmd = ['ncks', '-A',
+                    '-v', ','.join(pism_stats_vars),
+                    tmp_file,
+                    final_file]
+        sub.call(ncks_cmd)
+        # Add coordinate vars and mapping
         ncks_cmd = ['ncks', '-A', '-v', 'x,y,mapping',
                     target_grid_file,
-        '{}/{}_{}.nc'.format(vars_dir, m_var, project)]
+                    final_file]
         sub.call(ncks_cmd)
-#     for file in *_$obase.nc; do
-#         ncks -A -v x,y,mapping $bagrid $file
-#         ncks -A -v run_stats,pism_config $tmpfile1 $file
-#     done
+        # Update attributes
+        nc = CDF(final_file, 'a')
+        try:
+            nc_var = nc.variables[m_var]
+            nc_var.mapping = 'mapping'
+            nc_var.units = ismip6_vars[m_var].units
+            nc_var.standard_name = ismip6_vars[m_var].standard_name
+        except:
+            pass
+        nc.close()
 
     
