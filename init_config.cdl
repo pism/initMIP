@@ -2,6 +2,11 @@ netcdf pism_overrides {
     variables:
     byte pism_overrides;
 
+    pism_overrides:mask_icefree_thickness_stress_balance_standard_units = "meters";
+    pism_overrides:mask_icefree_thickness_stress_balance_standard_type = "scalar";
+    pism_overrides:mask_icefree_thickness_stress_balance_standard = 1.0;
+    pism_overrides:mask_icefree_thickness_stress_balance_standard_doc = "If ice is thinner than this standard then the mask is set to MASK_ICE_FREE_BEDROCK or MASK_ICE_FREE_OCEAN for purposes of computing ice velocity distribution.";
+
     pism_overrides:air_temp_all_precip_as_snow = 272.15;
     pism_overrides:air_temp_all_precip_as_snow_doc = "Kelvin; threshold temperature below which all precipitation is snow";
 

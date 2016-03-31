@@ -79,11 +79,11 @@ ismip6_request_vars = (
     )
 
 pism_copy_vars = [
-    'beta',
     'cell_area',
-    'climatic_mass_balance',
+    # 'surface_mass_balance_average',
+    # 'basal_mass_balance_average',
+    'dHdt',
     'discharge_flux',
-#    'grounded_basal_flux',
     'taub_mag',
     'thk',
     'usurf',
@@ -130,9 +130,9 @@ pism_diag_vars = [
 ]
 
 pism_flux_vars = [
-    'climatic_mass_balance',
+    'basal_mass_balance_average',
     'discharge_flux',
-#    'grounded_basal_flux'
+    'surface_mass_balance_averge'
     ]
 
 
@@ -149,34 +149,59 @@ class ISMIP6Var(object):
     def __repr__(self):
         return "ISMIP6 Variable"
     
-    
+
+# ismip6_vars = {
+#     "acabf": ISMIP6Var("acabf"         , "surface_mass_balance_average" , "kg m-2 s-1", "land_ice_surface_specific_mass_balance_flux"),
+#     "dlithkdt": ISMIP6Var("dlithkdt"      , "dHdt"                  , "m s-1", "tendency_of_land_ice_thickness"),
+#     "hfgeoubed": ISMIP6Var("hfgeoubed"     , "hfgeoubed"             , "W m-2", "upward_geothermal_heat_flux_at_ground_level"),
+#     "iareaf": ISMIP6Var("iareaf"        , "iareaf"                , "m2", "floating_ice_shelf_area"),
+#     "iareag": ISMIP6Var("iareag"        , "iareag"                , "m2", "grounded_land_ice_area"),
+#     "libmassbf": ISMIP6Var("libmassbf"     , "basal_mass_balance_average"                      , "kg m-2 s-1", "land_ice_basal_specific_mass_balance_flux"),
+#     "licalvf": ISMIP6Var("licalvf"       , "discharge_flux"        , "kg m-2 s-1", "land_ice_specific_mass_flux_due_to_calving"),
+#     "lim": ISMIP6Var("lim"           , "imass"                 , "kg", "land_ice_mass"),
+#     "limnsw": ISMIP6Var("limnsw"        , "limnsw"                , "kg", "land_ice_mass_not_displacing_sea_water"),
+#     "litempbot": ISMIP6Var("litempbot"     , "tempbase"              , "K", "land_ice_basal_temperature"),
+#     "litempsnic": ISMIP6Var("litempsnic"    , "tempsurf"              , "K", "temperature_at_ground_level_in_snow_or_firn"),
+#     "lithk": ISMIP6Var("lithk"         , "thk"                   , "m", "land_ice_thickness"),
+#     "orog": ISMIP6Var("orog"          , "usurf"                 , "m", "surface_altitude"),
+#     "sftgrf": ISMIP6Var("sftgrf"        , "sftgrf"                , "1", "grounded_ice_sheet_area_fraction"),
+#     "sftflf": ISMIP6Var("sftflf"        , "sftflf"                , "1", "floating_ice_sheet_area_fraction"),
+#     "sftgif": ISMIP6Var("sftgif"        , "sftgif"                , "1", "land_ice_area_fraction"),
+#     "strbasemag": ISMIP6Var("strbasemag"    , "taub_mag"                  , "Pa", "magnitude_of_land_ice_basal_drag"),
+#     "tendacabf": ISMIP6Var("tendacabf"     , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_surface_mass_balance"),
+#     "tendlibmassbf": ISMIP6Var("tendlibmassbf" , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_basal_mass_balance"),
+#     "tendlicalvf": ISMIP6Var("tendlicalvf"   , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_calving"),
+#     "topg": ISMIP6Var("topg"          , "topg"                  , "m", "bedrock_altitude"),
+#     "uvelbase": ISMIP6Var("uvelbase"      , "uvelbase"              , "m s-1", "land_ice_basal_x_velocity"),
+#     "uvelmean": ISMIP6Var("uvelmean"      , "ubar"               , "m s-1", "land_ice_vertical_mean_x_velocity"),
+#     "uvelsurf": ISMIP6Var("uvelsurf"      , "uvelsurf"              , "m s-1", "land_ice_surface_x_velocity"),
+#     "vvelbase": ISMIP6Var("vvelbase"      , "vvelbase"              , "m s-1", "land_ice_basal_y_velocity"),
+#     "vvelmean": ISMIP6Var("vvelmean"      , "vbar"               , "m s-1", "land_ice_vertical_mean_y_velocity"),
+#     "vvelsurf": ISMIP6Var("vvelsurf"      , "vvelsurf"              , "m s-1", "land_ice_surface_y_velocity"),
+#     "wvelbase": ISMIP6Var("wvelbase"      , "wvelbase"              , "m s-1", "land_ice_basal_upward_velocity"),
+#     "wvelsurf": ISMIP6Var("wvelsurf"      , "wvelsurf"              , "m s-1", "land_ice_surface_upward_velocity")
+# }
+
 ismip6_vars = {
-    "acabf": ISMIP6Var("acabf"         , "climatic_mass_balance" , "kg m-2 s-1", "land_ice_surface_specific_mass_balance_flux"),
+    "acabf": ISMIP6Var("acabf"         , "surface_mass_balance_average" , "kg m-2 s-1", "land_ice_surface_specific_mass_balance_flux"),
     "dlithkdt": ISMIP6Var("dlithkdt"      , "dHdt"                  , "m s-1", "tendency_of_land_ice_thickness"),
     "hfgeoubed": ISMIP6Var("hfgeoubed"     , "hfgeoubed"             , "W m-2", "upward_geothermal_heat_flux_at_ground_level"),
-    "iareaf": ISMIP6Var("iareaf"        , "iareaf"                , "m2", "floating_ice_shelf_area"),
-    "iareag": ISMIP6Var("iareag"        , "iareag"                , "m2", "grounded_land_ice_area"),
-    "libmassbf": ISMIP6Var("libmassbf"     , ""                      , "kg m-2 s-1", "land_ice_basal_specific_mass_balance_flux"),
+    "libmassbf": ISMIP6Var("libmassbf"     , "basal_mass_balance_average"                      , "kg m-2 s-1", "land_ice_basal_specific_mass_balance_flux"),
     "licalvf": ISMIP6Var("licalvf"       , "discharge_flux"        , "kg m-2 s-1", "land_ice_specific_mass_flux_due_to_calving"),
-    "lim": ISMIP6Var("lim"           , "imass"                 , "kg", "land_ice_mass"),
-    "limnsw": ISMIP6Var("limnsw"        , "limnsw"                , "kg", "land_ice_mass_not_displacing_sea_water"),
     "litempbot": ISMIP6Var("litempbot"     , "tempbase"              , "K", "land_ice_basal_temperature"),
     "litempsnic": ISMIP6Var("litempsnic"    , "tempsurf"              , "K", "temperature_at_ground_level_in_snow_or_firn"),
     "lithk": ISMIP6Var("lithk"         , "thk"                   , "m", "land_ice_thickness"),
     "orog": ISMIP6Var("orog"          , "usurf"                 , "m", "surface_altitude"),
-    "sfrgrf": ISMIP6Var("sfrgrf"        , "sfrgrf"                , "1", "grounded_ice_sheet_area_fraction"),
+    "sftgrf": ISMIP6Var("sftgrf"        , "sftgrf"                , "1", "grounded_ice_sheet_area_fraction"),
     "sftflf": ISMIP6Var("sftflf"        , "sftflf"                , "1", "floating_ice_sheet_area_fraction"),
     "sftgif": ISMIP6Var("sftgif"        , "sftgif"                , "1", "land_ice_area_fraction"),
-    "strbasemag": ISMIP6Var("strbasemag"    , "taub"                  , "Pa", "magnitude_of_land_ice_basal_drag"),
-    "tendacabf": ISMIP6Var("tendacabf"     , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_surface_mass_balance"),
-    "tendlibmassbf": ISMIP6Var("tendlibmassbf" , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_basal_mass_balance"),
-    "tendlicalvf": ISMIP6Var("tendlicalvf"   , ""                      , "kg s-1", "tendency_of_land_ice_mass_due_to_calving"),
+    "strbasemag": ISMIP6Var("strbasemag"    , "taub_mag"                  , "Pa", "magnitude_of_land_ice_basal_drag"),
     "topg": ISMIP6Var("topg"          , "topg"                  , "m", "bedrock_altitude"),
     "uvelbase": ISMIP6Var("uvelbase"      , "uvelbase"              , "m s-1", "land_ice_basal_x_velocity"),
-    "uvelmean": ISMIP6Var("uvelmean"      , "uvelbar"               , "m s-1", "land_ice_vertical_mean_x_velocity"),
+    "uvelmean": ISMIP6Var("uvelmean"      , "ubar"               , "m s-1", "land_ice_vertical_mean_x_velocity"),
     "uvelsurf": ISMIP6Var("uvelsurf"      , "uvelsurf"              , "m s-1", "land_ice_surface_x_velocity"),
     "vvelbase": ISMIP6Var("vvelbase"      , "vvelbase"              , "m s-1", "land_ice_basal_y_velocity"),
-    "vvelmean": ISMIP6Var("vvelmean"      , "vvelbar"               , "m s-1", "land_ice_vertical_mean_y_velocity"),
+    "vvelmean": ISMIP6Var("vvelmean"      , "vbar"               , "m s-1", "land_ice_vertical_mean_y_velocity"),
     "vvelsurf": ISMIP6Var("vvelsurf"      , "vvelsurf"              , "m s-1", "land_ice_surface_y_velocity"),
     "wvelbase": ISMIP6Var("wvelbase"      , "wvelbase"              , "m s-1", "land_ice_basal_upward_velocity"),
     "wvelsurf": ISMIP6Var("wvelsurf"      , "wvelsurf"              , "m s-1", "land_ice_surface_upward_velocity")
@@ -399,6 +424,12 @@ if __name__ == "__main__":
         os.remove(tmp_file)
     except OSError:
         pass
+    # Check if request variables are present
+    nc = CDF(infile, 'r')
+    for m_var in pism_copy_vars:
+        if m_var not in nc.variables:
+            print("Requested variable '{}' missing".format(m_var))
+    nc.close()
     cmd = ['ncks', '-O',
            '-v', '{}'.format(','.join(pism_copy_vars)),
            infile, tmp_file]
@@ -453,9 +484,9 @@ if __name__ == "__main__":
                out_file]
     sub.call(cdo_cmd)
 
-    cdo_cmd = ['cdo', 'splitname,swap',
-               out_file, '_{}'.format(project)]
-    sub.call(cdo_cmd)
+    # cdo_cmd = ['cdo', 'splitname,swap',
+    #            out_file, '_{}'.format(project)]
+    # sub.call(cdo_cmd)
 
     # Open file
     nc = CDF(out_file, 'a')
@@ -472,10 +503,21 @@ if __name__ == "__main__":
     time_bnds.units = 'years'
 
     nc.close()
-    
+
     vars_dir = os.path.join(project_dir, EXP)
     if not os.path.exists(vars_dir):
         os.mkdir(vars_dir)
+
+    for m_var in ismip6_request_vars:
+        try:
+            ncks_cmd = ['ncks', '-O',
+                        '-v', m_var,
+                        out_file,
+                        '{}/{}_{}.nc'.format(vars_dir, m_var, project)
+            ]
+        except:
+            print('  could not extract {}'.format(m_var))
+            
 
     for m_var in ismip6_vars.keys():
         cmd = ['mv',
