@@ -55,6 +55,36 @@ pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars_dict.iterite
 pism_copy_vars = [x for x in (ismip6_to_pism_dict.values() + pism_stats_vars)]
 
 
+def make_scalar_vars_ismip6_conforming(filename, ismip6_vars_dict):
+    '''
+    Make file ISMIP6 conforming
+    '''
+    
+    # Open file
+    nc = CDF(filename, 'a')
+
+    pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars_dict.iteritems())
+    
+    for pism_var in nc.variables:
+        nc_var = nc.variables[pism_var]
+        if pism_var in pism_to_ismip6_dict.keys():
+            ismip6_var = pism_to_ismip6_dict[pism_var]
+            print('Processing {} / {}'.format(pism_var, ismip6_var))
+            if not pism_var == ismip6_var:
+                print('  Renaming {pism_var} to {ismip6_var}'.format(pism_var=pism_var, ismip6_var=ismip6_var))
+                nc.renameVariable(pism_var, ismip6_var)
+                nc.sync()
+            if not nc_var.units == ismip6_vars_dict[ismip6_var].units:
+                o_units = ismip6_vars_dict[ismip6_var].units            
+                i_units = nc_var.units
+                print('  Converting {pism_var} from {i_units} to {o_units}'.format(pism_var=pism_var, i_units=i_units, o_units=o_units))    
+                i_f = cf_units.Unit(i_units)
+                o_f = cf_units.Unit(o_units)
+                nc_var[:] = i_f.convert(nc_var[:], o_f)
+                nc_var.units = o_units
+                nc_var.standard_name = ismip6_vars_dict[ismip6_var].standard_name
+    nc.close()
+
 if __name__ == "__main__":
 
 
@@ -82,47 +112,13 @@ if __name__ == "__main__":
     # Adjust the time axis
     print('Adjusting time axis')
     adjust_time_axis(out_file)
+    make_scalar_vars_ismip6_conforming(out_file, ismip6_vars_dict)
 
-#     vars_dir = os.path.join(project_dir, EXP)
-#     if not os.path.exists(vars_dir):
-#         os.mkdir(vars_dir)
-
-#     for m_var in ismip6_vars_dict.keys():
-#         final_file = '{}/{}_{}.nc'.format(vars_dir, m_var, project)
-#         print('Finalizing variable {}'.format(m_var))
-#         # Generate file
-#         print('  Copying to file {}'.format(final_file))
-#         ncks_cmd = ['ncks', '-O',
-#                     '-v', m_var,
-#                     out_file,
-#                     final_file]
-#         sub.call(ncks_cmd)
-#         # Add stats vars
-#         print('  Adding config/stats variables')
-#         ncks_cmd = ['ncks', '-A',
-#                     '-v', ','.join(pism_stats_vars),
-#                     tmp_file,
-#                     final_file]
-#         sub.call(ncks_cmd)
-#         # Add coordinate vars and mapping
-#         print('  Adding coordinte and mapping variables')
-#         ncks_cmd = ['ncks', '-A', '-v', 'x,y,mapping',
-#                     target_grid_file,
-#                     final_file]
-#         sub.call(ncks_cmd)
-#         # Update attributes
-#         print('  Adjusting attributes')
-#         nc = CDF(final_file, 'a')
-#         try:
-#             nc_var = nc.variables[m_var]
-#             nc_var.mapping = 'mapping'
-#             nc_var.units = ismip6_vars_dict[m_var].units
-#             nc_var.standard_name = ismip6_vars_dict[m_var].standard_name
-#         except:
-#             pass
-# #        nc.variables['pism_config'].delncattr('calendar')
-#         nc.Conventions = 'CF-1.6'
-#         nc.close()
-#         print('  Done finalizing variable {}'.format(m_var))
+    # Update attributes
+    print('Adjusting attributes')
+    nc = CDF(out_file, 'a')
+    nc.Conventions = 'CF-1.6'
+    nc.close()
+    print('Finished processing scalars file {}'.format(out_file))
 
     
