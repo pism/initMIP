@@ -24,7 +24,7 @@ parser.add_argument("-n", '--n_procs', dest="n_procs", type=int,
                     help='''number of cores/processors. default=4.''', default=4)
 parser.add_argument("-e", "--experiment", dest="experiment",
                     choices=['ctrl', 'asmb'],
-                    help="Output size type", default='ctrl')
+                    help="Experiment type", default='ctrl')
 parser.add_argument("-r", "--remap_method", dest="remap_method",
                     choices=['con', 'bil'],
                     help="Remapping method", default='con')
@@ -57,12 +57,17 @@ GROUP = 'UAF'
 MODEL = 'PISM' + PISM_GRID_RES_ID
 EXP = experiment
 TYPE = '_'.join([EXP, '0' + TARGET_GRID_RES_ID])
+INIT = '_'.join(['init', '0' + TARGET_GRID_RES_ID])
 project = '{IS}_{GROUP}_{MODEL}'.format(IS=IS, GROUP=GROUP, MODEL=MODEL)
 
 pism_stats_vars = ['pism_config',
                    'run_stats']
 pism_proj_vars = ['cell_area',
-                  'mapping']
+                  'mapping',
+                  'lat',
+                  'lat_bnds',
+                  'lon',
+                  'lon_bnds']
 ismip6_vars_dict = get_ismip6_vars_dict('ismip6vars.csv', 2)
 ismip6_to_pism_dict = dict((k, v.pism_name) for k, v in ismip6_vars_dict.iteritems())
 pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars_dict.iteritems())
@@ -77,7 +82,11 @@ if __name__ == "__main__":
     project_dir = os.path.join(GROUP, MODEL, TYPE)
     if not os.path.exists(project_dir):
         os.makedirs(project_dir)
-        
+
+    init_dir = os.path.join(GROUP, MODEL, INIT)
+    if not os.path.exists(init_dir):
+        os.makedirs(init_dir)
+
     tmp_dir = os.path.join('_'.join(['tmp', MODEL]))
     if not os.path.exists(tmp_dir):
         os.makedirs(tmp_dir)
@@ -102,8 +111,13 @@ if __name__ == "__main__":
     # Make the file ISMIP6 conforming
     make_spatial_vars_ismip6_conforming(tmp_file, ismip6_vars_dict)
     # Should be temporary until new runs
-    nc2cdo_cmd = ['nc2cdo.py', tmp_file]
-    sub.call(nc2cdo_cmd)
+    ncatted_cmd = ["ncatted",
+                   "-a", '''bounds,lat,o,c,lat_bnds''',
+                   "-a", '''bounds,lon,o,c,lon_bnds''',
+                   "-a", '''coordinates,lat_bnds,d,,''',
+                   "-a", '''coordinates,lon_bnds,d,,''',
+                   tmp_file]
+    sub.call(ncatted_cmd)
                 
     # Create source grid definition file
     source_grid_filename = 'source_grid.nc'
@@ -135,7 +149,7 @@ if __name__ == "__main__":
         sub.call(cdo_cmd)
 
     # Remap to SeaRISE grid    
-    out_filename = '{project}_{exp}.nc'.format(project=project, exp=EXP.upper())
+    out_filename = '{project}_{exp}.nc'.format(project=project, exp=EXP)
     out_file = os.path.join(tmp_dir, out_filename)
     try:
         os.remove(out_file)
@@ -153,12 +167,12 @@ if __name__ == "__main__":
     adjust_time_axis(out_file)
 
     for m_var in ismip6_vars_dict.keys():
-        final_file = '{}/{}_{}.nc'.format(project_dir, m_var, project)
+        final_file = '{}/{}_{}_{}.nc'.format(project_dir, m_var, project, EXP)
         print('Finalizing variable {}'.format(m_var))
         # Generate file
         print('  Copying to file {}'.format(final_file))
-        ncks_cmd = ['ncks', '-O',
-                    '-v', m_var,
+        ncks_cmd = ['ncks', '-O', '-4', '-L', '3',
+                    '-v', ','.join([m_var,'lat','lat_vertices','lon','lon_vertices']),
                     out_file,
                     final_file]
         sub.call(ncks_cmd)
@@ -180,14 +194,25 @@ if __name__ == "__main__":
         nc = CDF(final_file, 'a')
         try:
             nc_var = nc.variables[m_var]
+            nc_var.coordintes = 'lat lon'
             nc_var.mapping = 'mapping'
-            nc_var.units = ismip6_vars_dict[m_var].units
             nc_var.standard_name = ismip6_vars_dict[m_var].standard_name
+            nc_var.units = ismip6_vars_dict[m_var].units
         except:
             pass
-#        nc.variables['pism_config'].delncattr('calendar')
         nc.Conventions = 'CF-1.6'
         nc.close()
         print('  Done finalizing variable {}'.format(m_var))
+
+        if EXP in ('ctrl'):
+            init_file = '{}/{}_{}_{}.nc'.format(init_dir, m_var, project, 'init')
+            print('  Copying time 0 to file {}'.format(init_file))
+            ncks_cmd = ['ncks', '-O', '-4', '-L', '3',
+                        '-d', 'time,0',
+                        '-v', m_var,
+                        final_file,
+                        init_file]
+            sub.call(ncks_cmd)
+            
 
     

@@ -43,8 +43,8 @@ GROUP = 'UAF'
 MODEL = 'PISM' + PISM_GRID_RES_ID
 EXP = experiment
 TYPE = '_'.join([EXP, '0' + TARGET_GRID_RES_ID])
+INIT = '_'.join(['init', '0' + TARGET_GRID_RES_ID])
 project = '{IS}_{GROUP}_{MODEL}'.format(IS=IS, GROUP=GROUP, MODEL=MODEL)
-
 pism_stats_vars = ['pism_config',
                    'run_stats']
 
@@ -54,43 +54,16 @@ pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars_dict.iterite
 
 pism_copy_vars = [x for x in (ismip6_to_pism_dict.values() + pism_stats_vars)]
 
-
-def make_scalar_vars_ismip6_conforming(filename, ismip6_vars_dict):
-    '''
-    Make file ISMIP6 conforming
-    '''
-    
-    # Open file
-    nc = CDF(filename, 'a')
-
-    pism_to_ismip6_dict = dict((v.pism_name, k) for k, v in ismip6_vars_dict.iteritems())
-    
-    for pism_var in nc.variables:
-        nc_var = nc.variables[pism_var]
-        if pism_var in pism_to_ismip6_dict.keys():
-            ismip6_var = pism_to_ismip6_dict[pism_var]
-            print('Processing {} / {}'.format(pism_var, ismip6_var))
-            if not pism_var == ismip6_var:
-                print('  Renaming {pism_var} to {ismip6_var}'.format(pism_var=pism_var, ismip6_var=ismip6_var))
-                nc.renameVariable(pism_var, ismip6_var)
-                nc.sync()
-            if not nc_var.units == ismip6_vars_dict[ismip6_var].units:
-                o_units = ismip6_vars_dict[ismip6_var].units            
-                i_units = nc_var.units
-                print('  Converting {pism_var} from {i_units} to {o_units}'.format(pism_var=pism_var, i_units=i_units, o_units=o_units))    
-                i_f = cf_units.Unit(i_units)
-                o_f = cf_units.Unit(o_units)
-                nc_var[:] = i_f.convert(nc_var[:], o_f)
-                nc_var.units = o_units
-                nc_var.standard_name = ismip6_vars_dict[ismip6_var].standard_name
-    nc.close()
-
 if __name__ == "__main__":
 
 
     project_dir = os.path.join(GROUP, MODEL, TYPE)
     if not os.path.exists(project_dir):
         os.makedirs(project_dir)
+
+    init_dir = os.path.join(GROUP, MODEL, INIT)
+    if not os.path.exists(init_dir):
+        os.makedirs(init_dir)
     
     out_filename = 'scalars_{project}_{exp}.nc'.format(project=project, exp=EXP)
     out_file = os.path.join(project_dir, out_filename)
@@ -121,4 +94,12 @@ if __name__ == "__main__":
     nc.close()
     print('Finished processing scalars file {}'.format(out_file))
 
+    if EXP in ('ctrl'):
+        init_file = '{}/scalars_{}_{}.nc'.format(init_dir, project, 'init')
+        print('  Copying time 0 to file {}'.format(init_file))
+        ncks_cmd = ['ncks', '-O', '-4', '-L', '3',
+                    '-d', 'time,0',
+                    out_file,
+                    init_file]
+        sub.call(ncks_cmd)
     
