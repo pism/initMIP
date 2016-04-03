@@ -65,7 +65,7 @@ if __name__ == "__main__":
     if not os.path.exists(init_dir):
         os.makedirs(init_dir)
     
-    out_filename = 'scalars_{project}_{exp}.nc'.format(project=project, exp=EXP)
+    out_filename = 'scalar_{project}_{exp}.nc'.format(project=project, exp=EXP)
     out_file = os.path.join(project_dir, out_filename)
     try:
         os.remove(out_file)
@@ -92,10 +92,10 @@ if __name__ == "__main__":
     nc = CDF(out_file, 'a')
     nc.Conventions = 'CF-1.6'
     nc.close()
-    print('Finished processing scalars file {}'.format(out_file))
+    print('Finished processing scalar file {}'.format(out_file))
 
     if EXP in ('ctrl'):
-        init_file = '{}/scalars_{}_{}.nc'.format(init_dir, project, 'init')
+        init_file = '{}/scalar_{}_{}.nc'.format(init_dir, project, 'init')
         print('  Copying time 0 to file {}'.format(init_file))
         ncks_cmd = ['ncks', '-O', '-4', '-L', '3',
                     '-d', 'time,0',
